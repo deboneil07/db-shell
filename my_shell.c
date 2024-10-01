@@ -17,7 +17,7 @@
 #define SH_RL_BUFSIZE 1024
 #define SH_TOK_BUFSIZE 64
 #define SH_TOK_DELIM " \t\r\n\a"
-#define HISTORY_SIZE = 3
+#define HISTORY_SIZE 3
 
 //char *sh_read_line(void){
 //	int bufsize = SH_RL_BUFSIZE; // initial block size
@@ -63,7 +63,7 @@ void add_to_history(char *command) { // arguments -> a pointer to a string array
 	if (history_count < HISTORY_SIZE) {
 		history[history_count++] = strdup(command); //history is a pointer to a string and adds commands
 	} else {
-		free[history[0]); // if size more then we free the oldest history [0]
+		free(history[0]); // if size more then we free the oldest history [0]
 		for (int i = 1; i < HISTORY_SIZE; i++) { // resetting index 1 at 0, 2 at 1, so we allocate the latest space for cmnd
 			history[i-1] = history[i];
 		}
@@ -86,62 +86,143 @@ void disable_raw_mode(struct termios *orig_termios) { // to stop reading arrow i
 
 //function to detect arrow keys and handle history traversal
 
-void handle_keypress(char **input_buffer) {
-	char c;
-	struct termios orig_termios;
-	enable_raw_mode(&orig_termios);
+//void handle_keypress(char **input_buffer) {
+//	char c;
+//	struct termios orig_termios;
+//	enable_raw_mode(&orig_termios);
+//
+//	while(1){
+//		c = getchar();
+//		if (c == '\033') {
+//			switch(getchar()) {
+//				case 'A' :
+//					if (history_count > 0 && history_index > 0)  {
+//						history_index--;
+//						printf("\33[2K\r> %s", history[history_index]);
+//						strcpy(*input_buffer, history[history_index]);
+//					} else if (history_index == -1) {
+//						history_index = history_count - 1;
+//						printf("\33[2K\r> %s",  history[history_index]);
+//						strcpy(*input_buffer, history[history_index]);
+//					}
+//					break;
+//				case 'B' :
+//					if  (history_index <  history_count - 1) {
+//						history_index++;
+//						printf("\33[2K\r> %s", history[history_index]);
+//						strcpy(*input_buffer, history[history_index]);
+//					} else {
+//						printf("\33[2K\r> ");
+//						history_index = -1;
+//						(*input_buffer)[0] = '\0';
+//					}
+//					break;
+//
+//			} else if (c == '\n') {
+//				break;
+//			} else {
+//				putchar(c);
+//				strncat(*input_buffer, &c, 1);
+//			}
+//		}
+//	disable_raw_mode(&orig_termios);
+//}
 
-	while(1){
-		c = getchar();
-		if (c == '\033') {
-			switch(getchar()) {
-				case 'A' :
-					if (history_count > 0 && history_index > 0)  {
-						history_index--;
-						printf("\33[2K\r> %s", history[history_index]);
-						strcpy(*input_buffer, history[history_index]);
-					} else if (history_index == -1) {
-						history_index = history_count - 1;
-						printf("\33[2K\r> %s",  history[history_index]);
-						strcpy(*input_buffer, history[history_index]);
-					}
-					break;
-				case 'B' :
-					if  (history_index <  history_count - 1) {
-						history_index++;
-						printf("\33[2K\r> %s", history[history_index]);
-						strcpy(*input_buffer, history[history_index]);
-					} else {
-						printf("\33[2K\r> ");
-						history_index = -1;
-						(*input_buffer)[0] = '\0';
-					}
-					break;
+char *sh_read_line(void) { // we used getLine before, now we'll capture chars from c one by one & raw mode disabled
 
-			} else if (c == '\n') {
-				break;
-			} else {
-				putchar(c);
-				strncat(*input_buffer, &c, 1);
-			}
-		}
-	disable_raw_mode(&orig_termios);
-}
-
-char *sh_read_line(void) {
-	char *line = NULL; // holds all chars received from stdin
-	ssize_t bufsize = 0; // buffer size, will start at 0 but getLine will dynamically increase it as per stdin
+	char *line = malloc(1024); // holds all chars received from stdin
+	int bufsize = 1024; // buffer size, will start at 0 but getLine will dynamically increase it as per stdin
 
 	// getline(store the chars, buffer size, stdin ) [for my understanding]
 
-	if (getline(&line, &bufsize, stdin) ==  -1) { // getline return either 1 or -1, if -1 means error or EOF
-		if (feof(stdin)) { // if reached EOF
-			exit(EXIT_SUCCESS); // exit
-		} else {
-			perror("readline"); //  if not EOF then error found
-			exit(EXIT_FAILURE); // exit
+	//if (getline(&line, &bufsize, stdin) ==  -1) { // getline return either 1 or -1, if -1 means error or EOF
+	//	if (feof(stdin)) { // if reached EOF
+	//		exit(EXIT_SUCCESS); // exit
+	//	} else {
+	//		perror("readline"); //  if not EOF then error found
+	//		exit(EXIT_FAILURE); // exit
+	//	}
+	//}
+
+
+	struct termios orig_termios;
+	enable_raw_mode(&orig_termios);
+
+	int position = 0;
+	char c;
+
+	line[0] = '\0';
+
+	while(1) {
+		c = getchar();
+		if (c == '\033') {
+			getchar();
+			switch(getchar()) {
+				case 'A' :
+					if (history_index > 0  && history_count > 0) {
+						history_index--;
+						printf("\33[2K\r> %s", history[history_index]);
+						strcpy(line, history[history_index]);
+						position = strlen(line);
+					} else if (history_index = -1) {
+						history_index = history_count - 1;
+						printf("\33[2k\r> %s", history[history_index]);
+						strcpy(line, history[history_index]);
+						position = strlen(line);
+					}
+					break;
+				case 'B':
+					if (history_index < history_count - 1) {
+						history_index++;
+						printf("\33\[2k\r> %s", history[history_index]);
+						strcpy(line, history[history_index]);
+						position = strlen(line);
+					} else {
+						printf("\33[2K\r> ");
+						line[0] = '\0';
+						position = 0;
+						history_index = -1;
+					}
+					break;
+				case 'D':
+					if (position > 0) {
+						position--;
+						printf("\b");
+					}
+					break;
+				case 'C':
+					if (position < strlen(line)) {
+						position++;
+						printf("\033[C");
+					}
+					break;
+			}
+		}
+		else if (c == '\n') {
+			line[position] = '\0';
+			break;
+		}
+		else if (c == 127) {
+			if (position > 0) {
+				position--;
+				printf("\b \b");
+				line[position] = '\0';
+			}
+		}
+		else {
+			if (position >= bufsize - 1) {
+				bufsize+=1024;
+				line = realloc(line, bufsize);
+			}
+
+			line[position] = c;
+			position++;
+			line[position] = '\0';
+			putchar(c);
 		}
 	}
+
+	disable_raw_mode(&orig_termios);
 
 	add_to_history(line);
 
@@ -317,19 +398,10 @@ void sh_loop(void){
 }
 
 
-
-
 // main function of code
 
 int main(int argc, char **argv) {
         sh_loop();  // we call the main loop of our shell
 
         return EXIT_SUCCESS;
-};
-
-
-
-
-
-
-
+}
