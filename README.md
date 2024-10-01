@@ -1,6 +1,6 @@
 # db-shell
 
-LEARN HOW TO MAKE A WORKING SHELL.
+LEARNING HOW TO MAKE A SHELL IN PURE C
 
 use gcc or cmake to compile
 
