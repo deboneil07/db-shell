@@ -166,7 +166,7 @@ char *sh_read_line(void) { // we used getLine before, now we'll capture chars fr
 						position = strlen(line);
 					} else if (history_index = -1) {
 						history_index = history_count - 1;
-						printf("\33[2k\r> %s", history[history_index]);
+						printf("\33[2K\r> %s", history[history_index]);
 						strcpy(line, history[history_index]);
 						position = strlen(line);
 					}
@@ -174,7 +174,7 @@ char *sh_read_line(void) { // we used getLine before, now we'll capture chars fr
 				case 'B':
 					if (history_index < history_count - 1) {
 						history_index++;
-						printf("\33\[2k\r> %s", history[history_index]);
+						printf("\33\[2K\r> %s", history[history_index]);
 						strcpy(line, history[history_index]);
 						position = strlen(line);
 					} else {
@@ -290,14 +290,14 @@ int sh_cd(char **args);
 int sh_exit(char **args);
 int sh_help(char **args);
 int sh_pwd(char **args);
-
-
+int sh_calc(char **args);
 
 char *builtin_str[] = { // a pointer array that is used to checking stdin
 	"cd",
 	"exit",
 	"help",
-	"pwd"
+	"pwd",
+	"calc"
 };
 
 // this is an arrow function that returns int and forces arguments on its elements as double pointer char
@@ -306,13 +306,38 @@ int (*builtin_func[]) (char **)  = { // builtin_func->array having a pointer to 
 	&sh_cd, // these are used so that once we match the command from stdin we can redirect them to the functions by Dynamic MA
 	&sh_exit,
 	&sh_help,
-	&sh_pwd
+	&sh_pwd,
+	&sh_calc
 };
 
 int sh_num_builtins() { // to find the length of the builtin_str array
 	return sizeof(builtin_str) / sizeof (char *); // sizeof builtin_str = 3 * 8 / sizeof one char = 8 i.e 24/8 = 3
 }
 
+int sh_calc(char **args) {
+	if ((args[1] == NULL) || (args[2] == NULL) || (args[3] == NULL)) {
+		fprintf(stderr, "sh: missing argument!");
+	} else {
+		switch(args[2][0]) {
+			case '+':
+				printf("\n%d\n", atoi(args[1]) + atoi(args[3]));
+				break;
+			case '-':
+				printf("\n%d\n", atoi(args[1]) - atoi(args[3]));
+                                break;
+			case '/':
+				printf("\n%d\n", atoi(args[1]) / atoi(args[3]));
+                                break;
+			case '*':
+				printf("\n%d\n", atoi(args[1]) * atoi(args[3]));
+                                break;
+			default:
+                		printf("sh: invalid operator!\n");
+                		break;
+		}
+	}
+	return 1;
+}
 
 int sh_cd(char **args) {
 	if (args[1] == NULL) {
@@ -353,7 +378,6 @@ int sh_pwd(char **args) {
 int sh_exit(char **args) {
 	return 0;
 }
-
 
 int sh_execute(char **args) {
 
